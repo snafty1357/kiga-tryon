@@ -97,7 +97,7 @@ ${garmentDescription ? `衣服の説明: ${garmentDescription}` : ''}
 
 【重要】服のディテール（ボタンの数、装飾、柄、ロゴ、ポケット、ステッチなど）は画像から完全に再現するため、これらについての質問は不要です。
 
-以下の「着こなし方」についてのみ質問してください：
+以下の「着こなし方」や「ポーズ」についてのみ質問してください：
 
 【着用方法】
 - ボタンやファスナーを開けるか閉めるか
@@ -109,6 +109,9 @@ ${garmentDescription ? `衣服の説明: ${garmentDescription}` : ''}
 
 【スタイリング】
 - 全体の雰囲気（カジュアル/きれいめ等）
+
+【ポーズ・姿勢】
+- モデル画像のポーズを分析し、それを維持するか、別のポーズ（ポケットに手を入れる、腕を組む、横向き、振り返る、歩く姿など）に変更するか質問してください。
 
 服のデザイン自体に関する質問は絶対にしないでください。
 JSON配列形式で返してください。`;
@@ -202,10 +205,10 @@ Output format:
 (Describe the exact garment with ALL its details from the image)
 
 [Subject]
-(Person wearing the garment)
+(Person wearing the garment, including posture and body language based on user preferences)
 
-[Styling]
-(How the garment is worn based on user preferences)
+[Styling & Pose]
+(How the garment is worn and the pose/posture based on user preferences)
 
 [Quality]
 (Quality tags)
@@ -231,10 +234,10 @@ Generate the prompt now:
 Exact reproduction of the garment with all original details preserved: every button, zipper, pocket, logo, pattern, stitch, and decoration exactly as shown in the reference image, identical colors and textures, no modifications to the original design
 
 [Subject]
-A person wearing the exact garment from the reference image
+A person wearing the exact garment from the reference image, matching the user's requested pose and posture
 
-[Styling]
-(Apply user preferences here)
+[Styling & Pose]
+(Apply user preferences for styling and pose here)
 
 [Quality]
 High quality fashion photography, photorealistic, detailed fabric textures, professional studio lighting, 8k resolution, sharp focus, accurate garment reproduction
@@ -292,10 +295,10 @@ Output format:
 (Keep original garment details, enhance description)
 
 [Subject]
-(Enhanced person description)
+(Enhanced person description, including clear pose and posture)
 
-[Styling]
-(Enhanced styling details)
+[Styling & Pose]
+(Enhanced styling and pose details)
 
 [Quality]
 (Enhanced quality tags)

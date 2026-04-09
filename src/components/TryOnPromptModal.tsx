@@ -94,6 +94,11 @@ const TryOnPromptModal: React.FC<TryOnPromptModalProps> = ({
           question: 'ボタン・ファスナーの状態は？',
           options: ['全部閉める', '一番上だけ開ける', '数個開ける', '全開'],
         },
+        {
+          id: 'q6',
+          question: 'ポーズはどのようにしますか？',
+          options: ['元画像のまま', 'ポケットに手を入れる', '横向き/振り返る', '腕を組む', '自然に立たせる'],
+        },
       ]);
       setActiveQuestionIndex(0);
     } finally {
