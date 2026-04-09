@@ -95,6 +95,7 @@ const App: React.FC = () => {
   // TryOnPromptModal状態
   const [tryOnModalOpen, setTryOnModalOpen] = useState(false);
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  const [reusedPrompt, setReusedPrompt] = useState<string | undefined>(undefined);
   
   // 履歴パネル
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -1135,7 +1136,10 @@ const App: React.FC = () => {
       {/* TryOn Prompt Modal */}
       <TryOnPromptModal
         isOpen={tryOnModalOpen}
-        onClose={() => setTryOnModalOpen(false)}
+        onClose={() => {
+          setTryOnModalOpen(false);
+          setReusedPrompt(undefined);
+        }}
         onGenerate={handleGenerateWithPrompt}
         onGenerateQuestions={handleGenerateQuestions}
         onGeneratePromptFromAnswers={handleGeneratePromptFromAnswers}
@@ -1148,13 +1152,28 @@ const App: React.FC = () => {
         }))}
         isGeneratingQuestions={isGeneratingQuestions}
         isGeneratingTryOn={isGenerating}
+        initialPrompt={reusedPrompt}
       />
 
       {/* History Panel */}
       <HistoryPanel
         isOpen={isHistoryOpen}
         onClose={() => navigate('/')}
-        onSelectEntry={(entry) => console.log('Selected entry:', entry)}
+        onSelectEntry={(entry) => setResults(prev => [
+          { 
+            id: Date.now().toString(), 
+            imageUrl: entry.imageUrl, 
+            garmentLabels: entry.garmentLabels,
+            projectId: 'default',
+            timestamp: new Date()
+          },
+          ...prev
+        ])}
+        onReusePrompt={(prompt) => {
+          setReusedPrompt(prompt);
+          setTryOnModalOpen(true);
+          navigate('/');
+        }}
       />
     </div>
   );

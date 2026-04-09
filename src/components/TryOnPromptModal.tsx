@@ -16,6 +16,7 @@ interface TryOnPromptModalProps {
   garmentPreviews: Array<{ emoji: React.ReactNode; preview: string | null; label: string }>;
   isGeneratingQuestions: boolean;
   isGeneratingTryOn: boolean;
+  initialPrompt?: string;
 }
 
 type Step = 'questions' | 'prompt';
@@ -31,6 +32,7 @@ const TryOnPromptModal: React.FC<TryOnPromptModalProps> = ({
   garmentPreviews,
   isGeneratingQuestions,
   isGeneratingTryOn,
+  initialPrompt,
 }) => {
   const [step, setStep] = useState<Step>('questions');
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -42,12 +44,17 @@ const TryOnPromptModal: React.FC<TryOnPromptModalProps> = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [customAnswer, setCustomAnswer] = useState('');
 
-  // モーダルが開いたときに質問を生成
+  // モーダルが開いたときに処理
   useEffect(() => {
-    if (isOpen && questions.length === 0) {
-      handleLoadQuestions();
+    if (isOpen) {
+      if (initialPrompt) {
+        setPrompt(initialPrompt);
+        setStep('prompt');
+      } else if (questions.length === 0) {
+        handleLoadQuestions();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, initialPrompt]);
 
   // モーダルが閉じたときにリセット
   useEffect(() => {

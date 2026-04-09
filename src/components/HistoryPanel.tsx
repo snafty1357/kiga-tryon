@@ -6,11 +6,13 @@ interface HistoryPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectEntry: (entry: HistoryEntry) => void;
+  onReusePrompt: (prompt: string) => void;
 }
 
-const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, onSelectEntry }) => {
+const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, onSelectEntry, onReusePrompt }) => {
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [zoomedEntry, setZoomedEntry] = useState<HistoryEntry | null>(null);
+  const [viewingPromptId, setViewingPromptId] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -235,6 +237,27 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, onSelectEn
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                setViewingPromptId(viewingPromptId === entry.id ? null : entry.id);
+                              }}
+                              className="w-7 h-7 rounded-lg bg-[#00BFA5]/10 text-[#00BFA5] hover:bg-[#00BFA5]/20 flex items-center justify-center text-xs transition-colors"
+                              title="プロンプトを確認"
+                            >
+                              💬
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onClose();
+                                onReusePrompt(entry.description || '');
+                              }}
+                              className="w-7 h-7 rounded-lg bg-[#00d4ff]/10 text-[#00d4ff] hover:bg-[#00d4ff]/20 flex items-center justify-center text-xs transition-colors"
+                              title="この状況を再現 (Play)"
+                            >
+                              ▶️
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 onSelectEntry(entry);
                                 onClose();
                               }}
@@ -261,6 +284,14 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, onSelectEn
                             </button>
                           </div>
                         </div>
+
+                        {/* Expandable Prompt View */}
+                        {viewingPromptId === entry.id && entry.description && (
+                          <div className="mt-3 p-3 bg-white border border-[#E0E0E0] rounded-lg text-[10px] text-[#444] font-mono whitespace-pre-wrap">
+                            <div className="font-bold text-[#00BFA5] mb-1">=== 使用されたプロンプト ===</div>
+                            {entry.description}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
