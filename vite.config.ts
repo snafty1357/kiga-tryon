@@ -26,21 +26,26 @@ function falProxyPlugin(env: Record<string, string>): Plugin {
           return;
         }
 
-        const url = new URL(req.url || '', `http://${req.headers.host}`);
-        const path = url.searchParams.get('path');
-        const host = url.searchParams.get('host');
+        const urlParsed = new URL(req.url || '', `http://${req.headers.host}`);
+        const path = urlParsed.searchParams.get('path');
+        const host = urlParsed.searchParams.get('host');
+        const fullUrl = urlParsed.searchParams.get('url');
 
-        if (!path) {
+        let targetUrl;
+
+        if (fullUrl) {
+          targetUrl = fullUrl;
+        } else if (path) {
+          const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+          let targetHost = 'queue.fal.run';
+          if (host === 'fal.run') targetHost = 'fal.run';
+          targetUrl = `https://${targetHost}/${cleanPath}`;
+        } else {
           res.statusCode = 400;
-          res.end(JSON.stringify({ error: 'Missing path parameter' }));
+          res.end(JSON.stringify({ error: 'Missing path or url parameter' }));
           return;
         }
 
-        const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-        let targetHost = 'queue.fal.run';
-        if (host === 'fal.run') targetHost = 'fal.run';
-
-        const targetUrl = `https://${targetHost}/${cleanPath}`;
         console.log(`[Proxy] ${req.method} -> ${targetUrl}`);
 
         let body = '';
@@ -91,12 +96,31 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, (process as any).cwd(), '')
 
   return {
+    server: {
+      proxy: {
+        '/api/openai': {
+          target: 'https://api.openai.com/v1/chat/completions',
+          changeOrigin: true,
+          rewrite: () => '',
+          secure: true,
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq) => {
+              const apiKey = env.OPENAI_API_KEY || env.VITE_OPENAI_API_KEY;
+              if (apiKey) {
+                proxyReq.setHeader('Authorization', `Bearer ${apiKey}`);
+              }
+            });
+          }
+        }
+      }
+    },
     plugins: [
       react(),
       falProxyPlugin(env),
     ],
     define: {
       'process.env.API_KEY': JSON.stringify(env.API_KEY),
+      'process.env.OPENAI_API_KEY': JSON.stringify(env.OPENAI_API_KEY),
       'process.env.VITE_FAL_KEY': JSON.stringify(env.VITE_FAL_KEY),
       'process.env': {}
     }

@@ -1,8 +1,8 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 
 interface ImageUploaderProps {
   label: string;
-  emoji: string;
+  icon: React.ReactNode;
   previewUrl: string | null;
   onFileSelect: (file: File) => void;
   onClear: () => void;
@@ -11,16 +11,26 @@ interface ImageUploaderProps {
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({
-  label, emoji, previewUrl, onFileSelect, onClear, accentColor, hint
+  label, icon, previewUrl, onFileSelect, onClear, accentColor, hint
 }) => {
+  const [isDragging, setIsDragging] = useState(false);
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
       onFileSelect(file);
@@ -37,27 +47,46 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-xs font-bold uppercase tracking-wider" style={{ color: accentColor }}>
-        {emoji} {label}
+      <label
+        className="text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5"
+        style={{ color: `${accentColor}cc` }}
+      >
+        <span className="text-base flex items-center">{icon}</span>
+        <span>{label}</span>
       </label>
 
       {previewUrl ? (
         <div className="relative group">
           <div
-            className="w-full aspect-[3/4] bg-black rounded-xl border-2 overflow-hidden"
-            style={{ borderColor: `${accentColor}44` }}
+            className="w-full aspect-[3/4] bg-[#FAFAFA] rounded-xl overflow-hidden transition-all duration-300 group-hover:shadow-xl"
+            style={{
+              border: `2px solid ${accentColor}30`,
+              boxShadow: `0 0 0 0 ${accentColor}00`,
+            }}
           >
-            <img src={previewUrl} alt={label} className="w-full h-full object-contain" />
+            <img
+              src={previewUrl}
+              alt={label}
+              className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.02]"
+            />
+            {/* Overlay gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </div>
+
+          {/* Clear button */}
           <button
             onClick={onClear}
-            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 text-white/70 hover:text-red-400 hover:bg-black flex items-center justify-center text-sm font-bold transition-all opacity-0 group-hover:opacity-100"
+            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-[#FAFAFA] backdrop-blur-sm text-[#333333]/60 hover:text-red-400 hover:bg-[#FAFAFA] flex items-center justify-center text-sm font-bold transition-all duration-300 opacity-0 group-hover:opacity-100 border border-[#E0E0E0]"
           >
-            ×
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
+
+          {/* Change button */}
           <label
             htmlFor={inputId}
-            className="absolute bottom-2 right-2 px-3 py-1 rounded-lg bg-black/70 text-[10px] font-bold cursor-pointer hover:bg-black transition-colors opacity-0 group-hover:opacity-100"
+            className="absolute bottom-2 right-2 px-3 py-1.5 rounded-lg bg-[#FAFAFA] backdrop-blur-sm text-[10px] font-semibold cursor-pointer hover:bg-[#FAFAFA] transition-all duration-300 opacity-0 group-hover:opacity-100 border border-[#E0E0E0]"
             style={{ color: accentColor }}
           >
             変更
@@ -67,20 +96,40 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       ) : (
         <label
           htmlFor={inputId}
-          className="w-full aspect-[3/4] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all hover:scale-[1.02]"
-          style={{ borderColor: `${accentColor}44`, backgroundColor: `${accentColor}08` }}
+          className={`w-full aspect-[3/4] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${
+            isDragging ? 'scale-[1.02]' : 'hover:scale-[1.01]'
+          }`}
+          style={{
+            borderColor: isDragging ? accentColor : `${accentColor}30`,
+            backgroundColor: isDragging ? `${accentColor}10` : `${accentColor}05`,
+            boxShadow: isDragging ? `0 0 30px ${accentColor}20` : 'none',
+          }}
           onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          <div className="text-4xl mb-3 opacity-40">{emoji}</div>
-          <p className="text-sm font-bold" style={{ color: `${accentColor}99` }}>
+          <div
+            className={`flex justify-center mb-3 transition-all duration-300 ${isDragging ? 'scale-110' : 'opacity-40'}`}
+          >
+            {icon}
+          </div>
+          <p
+            className="text-xs font-semibold transition-colors duration-300"
+            style={{ color: isDragging ? accentColor : `${accentColor}80` }}
+          >
             ドラッグ&ドロップ
           </p>
-          <p className="text-[10px] mt-1" style={{ color: `${accentColor}66` }}>
+          <p
+            className="text-[10px] mt-1 transition-colors duration-300"
+            style={{ color: isDragging ? `${accentColor}aa` : `${accentColor}50` }}
+          >
             またはクリックして選択
           </p>
           {hint && (
-            <p className="text-[9px] mt-3 px-4 text-center" style={{ color: `${accentColor}44` }}>
+            <p
+              className="text-[9px] mt-3 px-4 text-center transition-colors duration-300"
+              style={{ color: `${accentColor}40` }}
+            >
               {hint}
             </p>
           )}

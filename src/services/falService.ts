@@ -1,5 +1,5 @@
 /**
- * Fal.ai IDM-VTON Service
+ * Fal.ai Nano Banana 2 Service
  * バーチャル試着の画像生成
  */
 
@@ -18,8 +18,10 @@ interface TryOnRequest {
   humanImageUrl: string;
   garmentImageUrl: string;
   description?: string;
+  negativePrompt?: string;
   resolution?: Resolution;
   format?: ImageFormat;
+  pose?: string;
 }
 
 interface TryOnResult {
@@ -28,14 +30,14 @@ interface TryOnResult {
 }
 
 /**
- * Fal.ai にリクエストを送信
+ * Fal.ai にリクエストを送信 (パス指定)
+ * @param useSync true の場合は fal.run を使用（同期モード）
  */
-async function falRequest(path: string, method: string = 'GET', body?: any): Promise<any> {
+async function falRequest(path: string, method: string = 'GET', body?: any, useSync: boolean = false): Promise<any> {
   const params = new URLSearchParams({ path });
-  if (path.startsWith('fal-ai/') && method === 'POST') {
-    // Initial submit goes to queue.fal.run
+  if (useSync) {
+    params.set('sync', '1');
   }
-
   const url = `${PROXY_BASE}?${params.toString()}`;
   const options: RequestInit = {
     method,
@@ -54,86 +56,216 @@ async function falRequest(path: string, method: string = 'GET', body?: any): Pro
 }
 
 /**
- * ステータスをポーリング
+ * フルURLを使用してFal.ai にリクエストを送信
  */
-async function pollStatus(requestId: string, endpoint: string): Promise<any> {
-  const statusPath = `fal-ai/${endpoint}/requests/${requestId}/status`;
-  const maxAttempts = 120; // 最大2分
+async function falRequestUrl(fullUrl: string, method: string = 'GET'): Promise<any> {
+  const params = new URLSearchParams({ url: fullUrl });
+  const url = `${PROXY_BASE}?${params.toString()}`;
+  const options: RequestInit = {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+  };
+
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(errorData.detail || errorData.error || `API Error: ${response.status}`);
+  }
+  return response.json();
+}
+
+/**
+ * ステータスをポーリング (status_url と response_url を使用)
+ */
+async function pollWithUrls(statusUrl: string, responseUrl: string): Promise<any> {
+  const maxAttempts = 240; // 最大8分（2秒×240回）
 
   for (let i = 0; i < maxAttempts; i++) {
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     try {
-      const status = await falRequest(statusPath);
+      const status = await falRequestUrl(statusUrl, 'GET');
       console.log(`[Fal.ai] Status: ${status.status}`);
 
       if (status.status === 'COMPLETED') {
         // 結果を取得
-        const resultPath = `fal-ai/${endpoint}/requests/${requestId}`;
-        return await falRequest(resultPath);
+        return await falRequestUrl(responseUrl, 'GET');
       }
 
       if (status.status === 'FAILED') {
-        throw new Error(`Generation failed: ${status.error || 'Unknown'}`);
+        throw new Error(`Generation failed: ${status.error || 'Unknown error'}`);
       }
+
+      // IN_QUEUE, IN_PROGRESS の場合は継続
     } catch (e: any) {
       if (e.message.includes('Generation failed')) throw e;
-      console.warn(`[Fal.ai] Poll error, retrying...`, e.message);
+      console.warn(`[Fal.ai] Poll error (attempt ${i + 1}):`, e.message);
+      // 一時的なエラーの場合は継続
     }
   }
 
-  throw new Error('Generation timed out');
+  throw new Error('Generation timed out after 8 minutes');
 }
 
 /**
- * バーチャル試着を実行
+ * バーチャル試着を実行 (Nano Banana 2)
  */
 export async function generateTryOn(request: TryOnRequest): Promise<TryOnResult> {
-  console.log('[TryOn] Starting generation...');
+  console.log('[TryOn] Starting generation with Nano Banana 2...');
+  console.log('[TryOn] Prompt:', request.description);
 
   // 解像度を取得
   const size = request.resolution ? RESOLUTION_MAP[request.resolution] : 1024;
-  const format = request.format || 'png';
 
-  // Submit to queue
-  const submitResult = await falRequest('fal-ai/idm-vton', 'POST', {
-    human_image_url: request.humanImageUrl,
-    garment_image_url: request.garmentImageUrl,
-    description: request.description || 'a garment',
-    width: size,
-    height: size,
-    output_format: format,
-  });
+  // ポジティブプロンプトのみ抽出（セクションタグを除去）
+  let prompt = request.description || 'A person wearing this garment naturally';
+  prompt = prompt
+    .replace(/===.*?===/g, '')
+    .replace(/\[.*?\]/g, '')
+    .replace(/\n+/g, ' ')
+    .trim();
 
-  // If we got a direct result (synchronous)
-  if (submitResult.image) {
+  // プロンプトが長すぎる場合は切り詰め
+  if (prompt.length > 1000) {
+    prompt = prompt.substring(0, 1000);
+  }
+
+  console.log('[TryOn] Final prompt:', prompt.substring(0, 200) + '...');
+
+  // 解像度をAPIの形式に変換
+  const resolutionMap: Record<number, string> = {
+    1024: '1K',
+    2048: '2K',
+    4096: '4K',
+  };
+
+  // ポーズ指定があれば追加
+  const poseInstruction = request.pose ? ` The person should be in a ${request.pose} pose.` : '';
+
+  // プロンプトを試着用に構築（人物画像が最初、服の画像が次）
+  const tryOnPrompt = `Using the first image as the person, make them wear the clothing item shown in the second image.${poseInstruction} ${prompt}. Preserve the exact design details of the garment including all buttons, pockets, collars, patterns, decorations, and proportions. The garment must look identical to the reference.`;
+
+  // Nano Banana 2 Edit API - queue.fal.run で非同期キュー送信
+  // （fal.run 同期モードはVercelの10秒タイムアウトで失敗するため、キューモードを使用）
+  const submitResult = await falRequest('fal-ai/nano-banana-2/edit', 'POST', {
+    prompt: tryOnPrompt,
+    image_urls: [request.humanImageUrl, request.garmentImageUrl],
+    resolution: resolutionMap[size] || '1K',
+    num_images: 1,
+    safety_tolerance: "5",
+    output_format: request.format || 'png',
+  }, false);  // useSync = false でキューモード（queue.fal.run）を使用
+
+  console.log('[TryOn] Submit response:', JSON.stringify(submitResult).substring(0, 300));
+
+  // If we got a direct result (synchronous - unlikely in queue mode)
+  if (submitResult.images && submitResult.images.length > 0) {
+    console.log('[TryOn] Got direct result');
     return {
-      imageUrl: submitResult.image.url,
-      maskUrl: submitResult.mask?.url,
+      imageUrl: submitResult.images[0].url,
     };
   }
 
-  // If queued, poll for result
+  // キューレスポンスの場合（status_url と response_url を使用）
+  if (submitResult.status_url && submitResult.response_url) {
+    console.log(`[TryOn] Queued - status_url: ${submitResult.status_url}`);
+    console.log(`[TryOn] Queued - response_url: ${submitResult.response_url}`);
+
+    const result = await pollWithUrls(submitResult.status_url, submitResult.response_url);
+
+    const imageUrl = result.images?.[0]?.url || result.image?.url;
+    if (!imageUrl) {
+      console.error('[TryOn] No image URL in result:', result);
+      throw new Error('No image URL in response');
+    }
+
+    console.log('[TryOn] Generation complete:', imageUrl);
+    return {
+      imageUrl: imageUrl,
+    };
+  }
+
+  // request_id のみの場合（フォールバック）
   if (submitResult.request_id) {
-    console.log(`[TryOn] Queued: ${submitResult.request_id}`);
-    const result = await pollStatus(submitResult.request_id, 'idm-vton');
+    console.log(`[TryOn] Queued with ID only: ${submitResult.request_id}`);
+    // 手動でURLを構築
+    const statusUrl = `https://queue.fal.run/fal-ai/nano-banana-2/edit/requests/${submitResult.request_id}/status`;
+    const responseUrl = `https://queue.fal.run/fal-ai/nano-banana-2/edit/requests/${submitResult.request_id}`;
+
+    const result = await pollWithUrls(statusUrl, responseUrl);
+
+    const imageUrl = result.images?.[0]?.url || result.image?.url;
+    if (!imageUrl) {
+      console.error('[TryOn] No image URL in result:', result);
+      throw new Error('No image URL in response');
+    }
+
+    console.log('[TryOn] Generation complete:', imageUrl);
     return {
-      imageUrl: result.image?.url || result.images?.[0]?.url,
-      maskUrl: result.mask?.url,
+      imageUrl: imageUrl,
     };
   }
 
-  throw new Error('Unexpected response format');
+  console.error('[TryOn] Unexpected response format:', submitResult);
+  throw new Error('Unexpected response format from Fal.ai');
 }
 
 /**
- * ローカルの File を data URL に変換
+ * ローカルの File を data URL に変換（大きな画像はリサイズ）
+ * Vercelのbody制限（4.5MB）を超えないように、画像をリサイズしてからBase64に変換
  */
-export function fileToDataUrl(file: File): Promise<string> {
+export function fileToDataUrl(file: File, maxSize: number = 1024): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
     reader.onerror = reject;
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+
+      // 画像をCanvasでリサイズ
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+
+        // maxSize以下ならそのまま返す（ただし元サイズが小さい場合はリサイズ不要）
+        if (width <= maxSize && height <= maxSize) {
+          // ファイルサイズが1MB以下ならそのまま返す
+          if (dataUrl.length < 1_400_000) {  // ~1MB in base64
+            resolve(dataUrl);
+            return;
+          }
+        }
+
+        // アスペクト比を維持してリサイズ
+        if (width > height) {
+          if (width > maxSize) {
+            height = Math.round(height * (maxSize / width));
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = Math.round(width * (maxSize / height));
+            height = maxSize;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(dataUrl); // fallback
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // JPEG 85%品質でエンコード（大幅にサイズ削減）
+        const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        console.log(`[Resize] ${img.naturalWidth}x${img.naturalHeight} → ${width}x${height}, ${Math.round(dataUrl.length/1024)}KB → ${Math.round(resizedDataUrl.length/1024)}KB`);
+        resolve(resizedDataUrl);
+      };
+      img.onerror = () => resolve(dataUrl); // fallback
+      img.src = dataUrl;
+    };
     reader.readAsDataURL(file);
   });
 }

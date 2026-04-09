@@ -18,16 +18,21 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'VITE_FAL_KEY is not configured' });
   }
 
-  const { path, host } = req.query;
-  if (!path) {
-    return res.status(400).json({ error: 'Missing path parameter' });
+  const { path, host, url: fullUrl } = req.query;
+  
+  let targetUrl;
+  
+  if (fullUrl) {
+    targetUrl = fullUrl;
+  } else if (path) {
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    let targetHost = 'queue.fal.run';
+    if (host === 'fal.run') targetHost = 'fal.run';
+    targetUrl = `https://${targetHost}/${cleanPath}`;
+  } else {
+    return res.status(400).json({ error: 'Missing path or url parameter' });
   }
 
-  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-  let targetHost = 'queue.fal.run';
-  if (host === 'fal.run') targetHost = 'fal.run';
-
-  const targetUrl = `https://${targetHost}/${cleanPath}`;
   console.log(`[Proxy] ${req.method} -> ${targetUrl}`);
 
   try {

@@ -48,20 +48,27 @@ const AuthForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-[#050508] flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-[-30%] left-[-20%] w-[800px] h-[800px] bg-[#00BFA5] opacity-[0.04] blur-[150px] rounded-full animate-float"></div>
+        <div className="absolute bottom-[-30%] right-[-20%] w-[700px] h-[700px] bg-[#00d4ff] opacity-[0.04] blur-[150px] rounded-full"></div>
+        <div className="absolute top-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#78909C] opacity-[0.02] blur-[120px] rounded-full"></div>
+      </div>
+
+      <div className="w-full max-w-md relative z-10 animate-in">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#a78bfa] to-[#7c3aed] flex items-center justify-center text-3xl font-black mx-auto mb-4">
-            K
+        <div className="text-center mb-10">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#00BFA5] to-[#78909C] flex items-center justify-center text-4xl font-black mx-auto mb-5 shadow-2xl shadow-teal-500/30 animate-float">
+            着
           </div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">KIGA</h1>
-          <p className="text-sm text-[#a0a0b0] mt-1">AI Virtual Try-On</p>
+          <h1 className="text-3xl font-extrabold text-[#333333] tracking-tight">着てみるAI</h1>
+          <p className="text-sm text-[#78909C] mt-2 tracking-[0.15em] uppercase">AI Virtual Try-On</p>
         </div>
 
         {/* Form Card */}
-        <div className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-8">
-          <h2 className="text-white font-bold text-lg mb-6 text-center">
+        <div className="glass rounded-3xl p-8 border border-[#E0E0E0] shadow-2xl">
+          <h2 className="text-[#333333] font-bold text-xl mb-8 text-center">
             {isLogin ? 'ログイン' : 'アカウント作成'}
           </h2>
 
@@ -69,7 +76,7 @@ const AuthForm: React.FC = () => {
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-3 bg-white text-gray-800 hover:bg-gray-100 transition-colors mb-4"
+            className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-3 bg-white text-gray-800 hover:bg-gray-50 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -80,29 +87,33 @@ const AuthForm: React.FC = () => {
             Googleでログイン
           </button>
 
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-px bg-[#2a2a3e]"></div>
-            <span className="text-xs text-[#555]">または</span>
-            <div className="flex-1 h-px bg-[#2a2a3e]"></div>
+          <div className="flex items-center gap-4 my-6">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+            <span className="text-xs text-[#78909C] font-medium">または</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
           </div>
 
           {/* Email Form */}
           <form onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-[#a0a0b0] mb-2 block">メールアドレス</label>
+                <label className="text-[11px] font-semibold text-[#78909C] mb-2 block uppercase tracking-wider">
+                  メールアドレス
+                </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="email@example.com"
                   required
-                  className="w-full bg-[#0a0a0f] border border-[#2a2a3e] rounded-xl px-4 py-3 text-sm text-white placeholder-[#444] focus:outline-none focus:border-[#a78bfa] transition-colors"
+                  className="w-full bg-[#FAFAFA] border border-[#E0E0E0] rounded-xl px-4 py-3.5 text-sm text-[#333333] placeholder-[#444] focus:outline-none focus:border-[#00BFA5]/50 focus:bg-[#FAFAFA] focus:shadow-lg focus:shadow-teal-500/10 transition-all duration-300"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#a0a0b0] mb-2 block">パスワード</label>
+                <label className="text-[11px] font-semibold text-[#78909C] mb-2 block uppercase tracking-wider">
+                  パスワード
+                </label>
                 <input
                   type="password"
                   value={password}
@@ -110,21 +121,21 @@ const AuthForm: React.FC = () => {
                   placeholder="8文字以上"
                   required
                   minLength={8}
-                  className="w-full bg-[#0a0a0f] border border-[#2a2a3e] rounded-xl px-4 py-3 text-sm text-white placeholder-[#444] focus:outline-none focus:border-[#a78bfa] transition-colors"
+                  className="w-full bg-[#FAFAFA] border border-[#E0E0E0] rounded-xl px-4 py-3.5 text-sm text-[#333333] placeholder-[#444] focus:outline-none focus:border-[#00BFA5]/50 focus:bg-[#FAFAFA] focus:shadow-lg focus:shadow-teal-500/10 transition-all duration-300"
                 />
               </div>
             </div>
 
             {/* Error */}
             {error && (
-              <div className="mt-4 px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+              <div className="mt-5 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs animate-in">
                 {error}
               </div>
             )}
 
             {/* Success Message */}
             {message && (
-              <div className="mt-4 px-4 py-2.5 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 text-xs">
+              <div className="mt-5 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-xs animate-in">
                 {message}
               </div>
             )}
@@ -133,7 +144,7 @@ const AuthForm: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-6 py-4 rounded-xl font-extrabold text-base bg-gradient-to-r from-[#a78bfa] via-[#7c3aed] to-[#a78bfa] bg-[length:200%_auto] text-white shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 hover:bg-right transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full mt-6 py-4 rounded-xl font-bold text-sm bg-gradient-to-r from-[#00BFA5] via-[#78909C] to-[#00BFA5] text-[#333333] shadow-xl shadow-teal-500/25 hover:shadow-teal-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 animate-gradient"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -152,7 +163,7 @@ const AuthForm: React.FC = () => {
           </form>
 
           {/* Toggle */}
-          <p className="text-center text-sm text-[#a0a0b0] mt-6">
+          <p className="text-center text-sm text-[#78909C] mt-8">
             {isLogin ? 'アカウントをお持ちでない方は' : 'すでにアカウントをお持ちの方は'}
             <button
               type="button"
@@ -161,7 +172,7 @@ const AuthForm: React.FC = () => {
                 setError(null);
                 setMessage(null);
               }}
-              className="text-[#a78bfa] font-bold hover:underline ml-1"
+              className="text-[#00BFA5] font-semibold hover:text-[#c4b5fd] transition-colors duration-300 ml-1"
             >
               {isLogin ? '新規登録' : 'ログイン'}
             </button>
@@ -169,7 +180,7 @@ const AuthForm: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-[10px] text-[#444] mt-6">
+        <p className="text-center text-[10px] text-[#444] mt-8 tracking-wider">
           Powered by Supabase Auth
         </p>
       </div>

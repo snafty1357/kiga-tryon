@@ -1,4 +1,8 @@
-/* KIGA - Global Styles */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 * {
   margin: 0;
@@ -6,15 +10,60 @@
   box-sizing: border-box;
 }
 
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background: #0a0a0f;
-  color: #fff;
+:root {
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #FAFAFA;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F0F4F4;
+  --border-color: #E0E0E0;
+  --border-hover: #CFD8DC;
+  
+  --text-primary: #333333;
+  --text-secondary: #78909C;
+  --text-muted: #9E9E9E;
+  
+  --accent-bluegray: #78909C;
+  --accent-teal: #00BFA5;
+  --accent-mint: #E0F2F1;
+  --accent-cyan: #00d4ff;
+  
+  --glow-teal: rgba(0, 191, 165, 0.15);
+  --glow-mint: rgba(224, 242, 241, 0.5);
 }
 
-/* Scrollbar */
+.dark {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #0d0d12;
+  --bg-card: rgba(13, 13, 18, 0.7);
+  --bg-card-hover: rgba(26, 26, 36, 0.8);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(0, 191, 165, 0.3);
+  
+  --text-primary: #FFFFFF;
+  --text-secondary: #8892b0;
+  --text-muted: #5a6578;
+  
+  --accent-bluegray: #78909C;
+  --accent-teal: #00BFA5;
+  --accent-mint: rgba(0, 191, 165, 0.1);
+  --accent-cyan: #00d4ff;
+  
+  --glow-teal: rgba(0, 191, 165, 0.25);
+  --glow-mint: rgba(0, 191, 165, 0.05);
+}
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-weight: 300;
+}
+
+/* Modern Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -25,30 +74,64 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2a2a3e;
-  border-radius: 999px;
+  background: rgba(120, 144, 156, 0.2);
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a3a4e;
+  background: rgba(120, 144, 156, 0.4);
 }
 
-/* Gradient animation */
-@keyframes gradient-shift {
-  0% { background-position: 0% center; }
-  100% { background-position: 200% center; }
+/* Clean Card Effect */
+.glass {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
 }
 
-.animate-gradient {
-  animation: gradient-shift 3s ease infinite;
+.glass:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.02);
 }
 
-/* Fade-in animation */
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--accent-bluegray), var(--accent-teal));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-in {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Card Hover */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+}
+
+::selection {
+  background: var(--accent-mint);
+  color: var(--accent-teal);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-teal);
+  outline-offset: 2px;
+}
+
+h1 { font-size: clamp(1.5rem, 4vw, 2.5rem); font-weight: 500; }
+h2 { font-size: clamp(1.25rem, 3vw, 1.75rem); font-weight: 500; }
+h3 { font-size: clamp(1rem, 2.5vw, 1.25rem); font-weight: 500; }
