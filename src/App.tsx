@@ -368,7 +368,7 @@ JSON配列形式で出力してください。`
     }
   };
 
-  // 全カットの画像を一括生成
+  // 全カットの画像を同時生成
   const generateAllCutImages = async () => {
     if (!humanFile) {
       alert('メインキャラクター（モデル画像）を設定してください。');
@@ -384,14 +384,19 @@ JSON配列形式で出力してください。`
     setIsGenerating(true);
     setError(null);
 
+    // 全カットを生成中状態にマーク
+    setCuts(prev => prev.map(c =>
+      enabledCutsToGenerate.some(ec => ec.id === c.id)
+        ? { ...c, isGenerating: true, errorMessage: undefined }
+        : c
+    ));
+
     try {
       const humanDataUrl = await fileToDataUrl(humanFile);
       const combinedBase = [stillImageStyle, stagePrompt].filter(Boolean).join(', ');
 
-      for (const cut of enabledCutsToGenerate) {
-        // Mark this cut as generating
-        setCuts(prev => prev.map(c => c.id === cut.id ? { ...c, isGenerating: true, errorMessage: undefined } : c));
-
+      // 全カットを同時に生成
+      const generatePromises = enabledCutsToGenerate.map(async (cut) => {
         try {
           let finalPrompt = cut.camera ? `Camera angle: ${cut.camera}. ${cut.prompt}` : cut.prompt;
           if (mainCharPrompt) {
@@ -404,7 +409,6 @@ JSON配列形式で出力してください。`
             finalPrompt += ` (negative: ${stillImageNegative})`;
           }
           if (cut.showSub && subCharFile && subCharPrompt) {
-            // IPプロンプトがある場合はそれを使用、なければデフォルトのsubCharPromptを使用
             const ipDescription = cut.ipPrompt || subCharPrompt;
             finalPrompt += `, with a small companion character: ${subCharPrompt}, ${ipDescription}`;
           }
@@ -416,16 +420,30 @@ JSON配列形式で出力してください。`
             format: 'jpeg',
           });
 
+          // 成功時に即座に状態を更新
           setCuts(prev => prev.map(c => c.id === cut.id ? {
             ...c,
             isGenerating: false,
             generatedImageUrl: result.imageUrl
           } : c));
+
+          return { id: cut.id, success: true };
         } catch (err: any) {
           console.error(`Cut ${cut.id} generation error:`, err);
-          setCuts(prev => prev.map(c => c.id === cut.id ? { ...c, isGenerating: false, errorMessage: err.message || '生成失敗' } : c));
+          setCuts(prev => prev.map(c => c.id === cut.id ? {
+            ...c,
+            isGenerating: false,
+            errorMessage: err.message || '生成失敗'
+          } : c));
+          return { id: cut.id, success: false, error: err.message };
         }
-      }
+      });
+
+      // 全ての生成を待機
+      const results = await Promise.all(generatePromises);
+      const successCount = results.filter(r => r.success).length;
+      console.log(`[ImageGeneration] Completed: ${successCount}/${enabledCutsToGenerate.length} images generated`);
+
     } catch (err: any) {
       console.error('Batch generation error:', err);
       setError(err.message || '画像生成中にエラーが発生しました');
