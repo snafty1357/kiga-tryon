@@ -230,13 +230,18 @@ const App: React.FC = () => {
       setIsGeneratingFixed(false);
       console.log('[AutoGenerate] Generated fixed elements:', generatedFixed);
 
-      // Step 3: 静止画プロンプトを英語で生成（静止画メタプロンプトを使用）
-      console.log('[AutoGenerate] Step 3: 静止画プロンプト生成中...');
+      // Step 3: 各カットのプロンプトを英語で再生成
+      console.log('[AutoGenerate] Step 3: 各カットのプロンプトを英語で再生成中...');
 
-      // カット情報をサマリーとして使用
-      const cutsSummary = newCuts.map((c, i) => `Cut ${i+1}: ${c.title} - ${c.prompt.substring(0, 50)}`).join('\n');
+      const cutPromptsToRegenerate = newCuts.map(c => ({
+        id: c.id,
+        title: c.title,
+        originalPrompt: c.prompt,
+        camera: c.camera,
+        ipPrompt: c.ipPrompt
+      }));
 
-      const stillPromptResponse = await fetch('/api/openai', {
+      const regenerateResponse = await fetch('/api/openai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -244,43 +249,70 @@ const App: React.FC = () => {
           messages: [
             {
               role: 'system',
-              content: `You are an expert in image generation prompts. Generate a comprehensive English style prompt for still image generation based on the given meta prompt and story information.
+              content: `You are an expert in image generation prompts. Regenerate each cut's prompt into high-quality English prompts for AI image generation.
 
-The output should be a single line of comma-separated English keywords/phrases that define:
-- Visual style (photorealistic, cinematic, etc.)
-- Lighting (natural, studio, dramatic, etc.)
-- Quality descriptors (8k, highly detailed, etc.)
-- Mood/atmosphere that matches the story
-- Color palette suggestions`
+For each cut, create a detailed English prompt that includes:
+- Character pose and expression
+- Camera angle and composition
+- Action/movement description
+- Background elements
+- Lighting and atmosphere
+- Any IP character actions if present
+
+Output as JSON array with format: [{"id": number, "prompt": "english prompt here"}, ...]`
             },
             {
               role: 'user',
-              content: `静止画メタプロンプト（ユーザーの指示）:
+              content: `静止画メタプロンプト（スタイル指示）:
 ${stillImageMetaPrompt}
 
-要素固定プロンプト:
+要素固定プロンプト（背景・環境）:
 ${generatedFixed}
 
-ストーリー概要:
-${pdfText.substring(0, 800)}
+以下の各カットのプロンプトを、画像生成AIに最適な英語プロンプトに変換してください:
 
-カット構成:
-${cutsSummary}
+${cutPromptsToRegenerate.map(c => `ID: ${c.id}
+タイトル: ${c.title}
+カメラ: ${c.camera || 'なし'}
+元プロンプト: ${c.originalPrompt}
+IP情報: ${c.ipPrompt || 'なし'}`).join('\n\n')}
 
-上記の情報をもとに、画像生成AIに最適な英語スタイルプロンプトを1行で出力してください。
-出力形式: masterpiece, 8k resolution, highly detailed, [追加のスタイル要素...]`
+JSON配列形式で出力してください。`
             }
           ],
-          max_tokens: 300
+          max_tokens: 2000
         })
       });
 
-      if (stillPromptResponse.ok) {
-        const stillData = await stillPromptResponse.json();
-        const stillStyle = stillData.choices?.[0]?.message?.content?.trim() || stillImageStyle;
-        setStillImageStyle(stillStyle);
-        console.log('[AutoGenerate] Generated still image prompt:', stillStyle);
+      if (regenerateResponse.ok) {
+        const regenerateData = await regenerateResponse.json();
+        const content = regenerateData.choices?.[0]?.message?.content?.trim();
+
+        try {
+          // JSON配列を抽出
+          const jsonMatch = content.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            const regeneratedPrompts = JSON.parse(jsonMatch[0]);
+
+            // カットのプロンプトを更新
+            const updatedCuts = newCuts.map(cut => {
+              const regenerated = regeneratedPrompts.find((r: any) => r.id === cut.id);
+              if (regenerated && regenerated.prompt) {
+                return { ...cut, prompt: regenerated.prompt };
+              }
+              return cut;
+            });
+
+            setCuts(updatedCuts);
+            console.log('[AutoGenerate] Regenerated cut prompts:', updatedCuts.map(c => ({ id: c.id, prompt: c.prompt.substring(0, 50) })));
+          }
+        } catch (parseErr) {
+          console.error('[AutoGenerate] Failed to parse regenerated prompts:', parseErr);
+        }
       }
+
+      // スタイルプロンプトも設定（要素固定プロンプトをベースに）
+      setStillImageStyle(`masterpiece, 8k resolution, highly detailed, ${generatedFixed}`);
 
       console.log('[AutoGenerate] 完了！');
     } catch (err: any) {
