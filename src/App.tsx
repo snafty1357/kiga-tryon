@@ -1529,8 +1529,6 @@ masterpiece, 8k resolution, highly detailed, [ストーリーに合った追加�
                     className={`w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all duration-300 ${
                       isGenerating
                         ? 'bg-[#F5F5F5] text-[#444] cursor-not-allowed border border-[#E0E0E0]'
-                        : !humanFile
-                        ? 'bg-purple-100 text-purple-400 border border-purple-200 hover:bg-purple-200 transition-colors cursor-pointer dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/30'
                         : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-[1.02]'
                     }`}
                   >
