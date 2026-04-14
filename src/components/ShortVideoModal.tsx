@@ -33,6 +33,7 @@ export interface CutItem {
   enabled: boolean;
   showMain: boolean;
   showSub: boolean;
+  ipPrompt?: string; // IP（サブキャラ）の状態・行動プロンプト
   generatedImageUrl?: string;
   isGenerating?: boolean;
   errorMessage?: string;
