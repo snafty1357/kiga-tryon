@@ -67,7 +67,10 @@ const App: React.FC = () => {
   const [extractedPdfText, setExtractedPdfText] = useState('');
   const [fixedElementMetaPrompt, setFixedElementMetaPrompt] = useState(DEFAULT_FIXED_META_PROMPT);
   const [isGeneratingFixed, setIsGeneratingFixed] = useState(false);
-  const [aiModel, setAiModel] = useState<AiModelType>('openai');
+  const [aiModel, setAiModel] = useState<AiModelType>(() => {
+    const saved = localStorage.getItem('snafty_ai_model');
+    return (saved as AiModelType) || 'openai';
+  });
   
   const [stillPromptPanelOpen, setStillPromptPanelOpen] = useState(false);
   const stillPromptPanelRef = useRef<HTMLDivElement>(null);
@@ -241,11 +244,15 @@ const App: React.FC = () => {
         ipPrompt: c.ipPrompt
       }));
 
-      const regenerateResponse = await fetch('/api/openai', {
+      // 選択されたAIモデルに応じてエンドポイントとモデル名を決定
+      const aiEndpoint = `/api/${aiModel}`;
+      const aiModelName = aiModel === 'openai' ? 'gpt-4o' : aiModel === 'gemini' ? 'gemini-2.5-flash' : 'claude-3-7-sonnet-20250219';
+
+      const regenerateResponse = await fetch(aiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: aiModelName,
           messages: [
             {
               role: 'system',
@@ -928,6 +935,29 @@ JSON配列形式で出力してください。`
 
                 {/* Toolbar on the Right */}
                 <div className="flex items-center gap-3">
+                  {/* AI Model Selector */}
+                  <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 rounded-lg p-0.5">
+                    {(['openai', 'gemini', 'claude'] as const).map((model) => (
+                      <button
+                        key={model}
+                        onClick={() => {
+                          setAiModel(model);
+                          localStorage.setItem('snafty_ai_model', model);
+                        }}
+                        className={`px-2 py-1 rounded-md text-[9px] font-bold transition-all ${
+                          aiModel === model
+                            ? model === 'openai'
+                              ? 'bg-green-500 text-white'
+                              : model === 'gemini'
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-orange-500 text-white'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                        }`}
+                      >
+                        {model === 'openai' ? 'GPT-4o' : model === 'gemini' ? 'Gemini' : 'Claude'}
+                      </button>
+                    ))}
+                  </div>
                   <button
                     onClick={() => setStoryboardModalOpen(true)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all shadow-sm bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-violet-500/20 hover:shadow-violet-500/40 hover:scale-105"
