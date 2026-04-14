@@ -618,35 +618,44 @@ masterpiece, 8k resolution, highly detailed, [ストーリーに合った追加�
                       {/* Per-Cut Character Assignment */}
                       <div>
                         <h4 className="text-[10px] font-bold text-[#78909C] dark:text-gray-400 uppercase tracking-wider mb-2">カットごとの登場設定</h4>
-                        <div className="space-y-1 max-h-[160px] overflow-y-auto custom-scrollbar pr-1 grid grid-cols-2 gap-x-4">
-                          {cuts.map((cut) => (
-                            <div key={cut.id} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all ${
+                        <div className="space-y-1.5 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">
+                          {cuts.map((cut, index) => (
+                            <div key={cut.id} className={`px-2 py-2 rounded-lg transition-all ${
                               cut.enabled ? 'bg-gray-50 dark:bg-white/[0.03]' : 'opacity-30'
                             }`}>
-                              <span className="text-[10px] font-bold text-[#78909C] dark:text-gray-500 w-4 text-center">{cut.id}</span>
-                              <button
-                                onClick={() => setCuts(prev => prev.map(c => c.id === cut.id ? { ...c, showMain: !c.showMain } : c))}
-                                className={`flex-1 py-0.5 rounded text-[8px] font-bold border transition-all ${
-                                  cut.showMain
-                                    ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-500 dark:text-cyan-400'
-                                    : 'bg-transparent border-gray-200 dark:border-white/10 text-gray-300 dark:text-gray-600'
-                                }`}
-                              >
-                                メイン
-                              </button>
-                              <button
-                                onClick={() => setCuts(prev => prev.map(c => c.id === cut.id ? { ...c, showSub: !c.showSub } : c))}
-                                disabled={!subCharFile}
-                                className={`flex-1 py-0.5 rounded text-[8px] font-bold border transition-all ${
-                                  !subCharFile
-                                    ? 'bg-transparent border-gray-100 dark:border-white/5 text-gray-200 dark:text-gray-700 cursor-not-allowed'
-                                    : cut.showSub
-                                    ? 'bg-purple-500/10 border-purple-500/30 text-purple-500 dark:text-purple-400'
-                                    : 'bg-transparent border-gray-200 dark:border-white/10 text-gray-300 dark:text-gray-600'
-                                }`}
-                              >
-                                IP
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-[#78909C] dark:text-gray-500 w-4 text-center">{index + 1}</span>
+                                <span className="text-[9px] text-[#555] dark:text-gray-400 flex-1 truncate">{cut.title}</span>
+                                <button
+                                  onClick={() => setCuts(prev => prev.map(c => c.id === cut.id ? { ...c, showMain: !c.showMain } : c))}
+                                  className={`px-2 py-0.5 rounded text-[8px] font-bold border transition-all ${
+                                    cut.showMain
+                                      ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-500 dark:text-cyan-400'
+                                      : 'bg-transparent border-gray-200 dark:border-white/10 text-gray-300 dark:text-gray-600'
+                                  }`}
+                                >
+                                  主
+                                </button>
+                                <button
+                                  onClick={() => setCuts(prev => prev.map(c => c.id === cut.id ? { ...c, showSub: !c.showSub } : c))}
+                                  disabled={!subCharFile}
+                                  className={`px-2 py-0.5 rounded text-[8px] font-bold border transition-all ${
+                                    !subCharFile
+                                      ? 'bg-transparent border-gray-100 dark:border-white/5 text-gray-200 dark:text-gray-700 cursor-not-allowed'
+                                      : cut.showSub
+                                      ? 'bg-purple-500/10 border-purple-500/30 text-purple-500 dark:text-purple-400'
+                                      : 'bg-transparent border-gray-200 dark:border-white/10 text-gray-300 dark:text-gray-600'
+                                  }`}
+                                >
+                                  IP
+                                </button>
+                              </div>
+                              {/* IP状態プロンプト表示 */}
+                              {cut.showSub && cut.ipPrompt && (
+                                <p className="text-[8px] text-purple-500 dark:text-purple-400 mt-1 ml-6 line-clamp-1">
+                                  🎭 {cut.ipPrompt}
+                                </p>
+                              )}
                             </div>
                           ))}
                         </div>
