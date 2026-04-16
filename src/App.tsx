@@ -4,7 +4,6 @@ import ResultGallery, { generateProjectId } from './components/ResultGallery';
 import type { ResultItem } from './components/ResultGallery';
 import PromptModal from './components/PromptModal';
 import TryOnPromptModal from './components/TryOnPromptModal';
-import ShortVideoModal from './components/ShortVideoModal';
 import { useAuth } from './contexts/AuthContext';
 import { generateTryOn, generatePose, fileToDataUrl, type Resolution, type ImageFormat } from './services/falService';
 import { generateQuestions, generatePromptFromAnswers, optimizeTryOnPrompt, parsePrompt, analyzeGarmentWithChatGPT, analyzeGarment, analyzePose, type Question, type GarmentAnalysis, type PoseAnalysisResult } from './services/openaiService';
@@ -109,9 +108,8 @@ const App: React.FC = () => {
   const [resolution, setResolution] = useState<Resolution>('1K');
   const [imageFormat, setImageFormat] = useState<ImageFormat>('png');
 
-  // 分析AIプロバイダー
-  type AIProvider = 'gemini' | 'chatgpt';
-  const [analysisAI, setAnalysisAI] = useState<AIProvider>('chatgpt');
+  // 分析AIプロバイダー（ChatGPTのみ使用）
+  const analysisAI = 'chatgpt' as const;
 
   // UI状態
   const [isGenerating, setIsGenerating] = useState(false);
@@ -120,20 +118,11 @@ const App: React.FC = () => {
 
   // TryOnPromptModal状態
   const [tryOnModalOpen, setTryOnModalOpen] = useState(false);
-  const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   const [reusedPrompt, setReusedPrompt] = useState<string | undefined>(undefined);
   
   // 履歴パネル
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-
-  // 使用量トラッキング
-  const [usageStats, setUsageStats] = useState({
-    generations: 0,      // 着画生成回数
-    analyses: 0,         // Gemini分析回数
-    optimizations: 0,    // 説明最適化回数
-    chatgptCalls: 0,     // ChatGPT呼び出し回数
-  });
 
   // タブタイトルアニメーション
   const originalTitle = useRef('着てみるAI - バーチャル試着');
@@ -185,36 +174,6 @@ const App: React.FC = () => {
     }
     prevResultsCount.current = results.length;
   }, [results.length]);
-
-  // コスト計算（概算）
-  const calculateCost = () => {
-    // Fal.ai Nanobanana2 着画生成コスト（解像度別）
-    // Base(1K): ~$0.08, 2K: ~$0.12, 4K: ~$0.16
-    const falCostPerGen: Record<Resolution, number> = {
-      '1K': 0.08,  // $0.08/生成
-      '2K': 0.12,  // $0.12/生成
-      '4K': 0.16,  // $0.16/生成
-    };
-
-    // Gemini API コスト（概算）
-    const geminiCostPerCall = 0.0005; // $0.0005/呼び出し
-
-    // ChatGPT API コスト（概算）
-    const chatgptCostPerCall = 0.002; // $0.002/呼び出し
-
-    const falCost = usageStats.generations * falCostPerGen[resolution];
-    const geminiCost = (usageStats.analyses + usageStats.optimizations) * geminiCostPerCall;
-    const chatgptCost = usageStats.chatgptCalls * chatgptCostPerCall;
-
-    return {
-      fal: falCost,
-      gemini: geminiCost,
-      chatgpt: chatgptCost,
-      total: falCost + geminiCost + chatgptCost,
-    };
-  };
-
-  const cost = calculateCost();
 
   // モデル画像選択（正面）
   const handleHumanSelect = useCallback(async (file: File) => {
@@ -270,10 +229,8 @@ const App: React.FC = () => {
     let result;
     if (analysisAI === 'chatgpt') {
       result = await analyzeGarmentWithChatGPT(base64, pendingGarmentId || undefined);
-      setUsageStats(prev => ({ ...prev, chatgptCalls: prev.chatgptCalls + 1 }));
     } else {
       result = await analyzeGarment(base64);
-      setUsageStats(prev => ({ ...prev, analyses: prev.analyses + 1 }));
     }
     return result;
   }, [pendingGarmentFile, pendingGarmentId, analysisAI]);
@@ -376,8 +333,7 @@ const App: React.FC = () => {
         }));
         
         allQuestions = [...allQuestions, ...taggedQuestions];
-        setUsageStats(prev => ({ ...prev, chatgptCalls: prev.chatgptCalls + 1 }));
-      }
+        }
 
       return allQuestions;
     } catch (e: any) {
@@ -414,7 +370,6 @@ const App: React.FC = () => {
         selectedPose,
         primaryGarment.id
       );
-      setUsageStats(prev => ({ ...prev, chatgptCalls: prev.chatgptCalls + 1 }));
       return prompt;
     } catch (e: any) {
       console.error('Prompt generation error:', e);
@@ -426,7 +381,6 @@ const App: React.FC = () => {
   const handleOptimizeTryOnPrompt = useCallback(async (prompt: string): Promise<string> => {
     try {
       const result = await optimizeTryOnPrompt(prompt);
-      setUsageStats(prev => ({ ...prev, chatgptCalls: prev.chatgptCalls + 1 }));
       return result;
     } catch (e: any) {
       console.error('Prompt optimization error:', e);
@@ -514,7 +468,6 @@ const App: React.FC = () => {
         if (error) console.error('Failed to save to Supabase:', error);
       });
 
-      setUsageStats(prev => ({ ...prev, generations: prev.generations + 1 }));
       setTryOnModalOpen(false);
     } catch (e: any) {
       console.error('[Generate] Error:', e);
@@ -567,6 +520,28 @@ const App: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* Output Settings */}
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#FAFAFA] rounded-lg border border-[#E0E0E0]">
+                <select
+                  value={resolution}
+                  onChange={(e) => setResolution(e.target.value as Resolution)}
+                  className="bg-transparent text-[10px] text-[#333333] focus:outline-none cursor-pointer"
+                >
+                  <option value="1K">1K</option>
+                  <option value="2K">2K</option>
+                  <option value="4K">4K</option>
+                </select>
+                <span className="text-[#E0E0E0]">|</span>
+                <select
+                  value={imageFormat}
+                  onChange={(e) => setImageFormat(e.target.value as ImageFormat)}
+                  className="bg-transparent text-[10px] text-[#333333] focus:outline-none cursor-pointer"
+                >
+                  <option value="png">PNG</option>
+                  <option value="jpeg">JPEG</option>
+                </select>
+              </div>
+
               {/* Theme Toggle Button */}
               <button
                 onClick={toggleTheme}
@@ -706,83 +681,6 @@ const App: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Center Panel: Inputs */}
             <div className="lg:col-span-5 space-y-6">
-              {/* Settings: Resolution & Format */}
-              <div className="glass rounded-2xl p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-1 h-5 rounded-full bg-gradient-to-b from-[#fbbf24] to-[#ff6b35]"></div>
-                  <h2 className="text-[#333333] font-semibold text-sm">出力設定</h2>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="text-[10px] font-medium text-[#78909C] mb-1.5 block uppercase tracking-wider">解像度</label>
-                    <select
-                      value={resolution}
-                      onChange={(e) => setResolution(e.target.value as Resolution)}
-                      className="w-full bg-[#FAFAFA] border border-[#E0E0E0] rounded-lg px-3 py-2.5 text-xs text-[#333333] focus:outline-none focus:border-[#00BFA5]/50 transition-all duration-300 cursor-pointer appearance-none"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2378909C'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'right 8px center',
-                        backgroundSize: '14px',
-                      }}
-                    >
-                      <option value="1K">1K</option>
-                      <option value="2K">2K</option>
-                      <option value="4K">4K</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-medium text-[#78909C] mb-1.5 block uppercase tracking-wider">形式</label>
-                    <select
-                      value={imageFormat}
-                      onChange={(e) => setImageFormat(e.target.value as ImageFormat)}
-                      className="w-full bg-[#FAFAFA] border border-[#E0E0E0] rounded-lg px-3 py-2.5 text-xs text-[#333333] focus:outline-none focus:border-[#fbbf24]/50 transition-all duration-300 cursor-pointer appearance-none"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'right 8px center',
-                        backgroundSize: '14px',
-                      }}
-                    >
-                      <option value="png">PNG</option>
-                      <option value="jpeg">JPEG</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-medium text-[#78909C] mb-1.5 block uppercase tracking-wider">分析AI</label>
-                    <select
-                      value={analysisAI}
-                      onChange={(e) => setAnalysisAI(e.target.value as AIProvider)}
-                      className="w-full bg-[#FAFAFA] border border-[#E0E0E0] rounded-lg px-3 py-2.5 text-xs text-[#333333] focus:outline-none focus:border-[#00BFA5]/50 transition-all duration-300 cursor-pointer appearance-none"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2378909C'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'right 8px center',
-                        backgroundSize: '14px',
-                      }}
-                    >
-                      <option value="gemini">Gemini</option>
-                      <option value="chatgpt">ChatGPT</option>
-                    </select>
-                  </div>
-                </div>
-                {/* Cost Display */}
-                {(usageStats.generations > 0 || usageStats.analyses > 0 || usageStats.chatgptCalls > 0) && (
-                  <div className="mt-3 pt-3 border-t border-[#E0E0E0]">
-                    <div className="flex items-center justify-between text-[10px]">
-                      <span className="text-[#78909C]">今回の概算費用</span>
-                      <span className="text-[#fbbf24] font-semibold">${cost.total.toFixed(4)}</span>
-                    </div>
-                    <div className="flex gap-2 mt-1.5 text-[9px] text-[#78909C]">
-                      <span>生成:{usageStats.generations}</span>
-                      <span>分析:{usageStats.analyses}</span>
-                      <span>GPT:{usageStats.chatgptCalls}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-
             {/* Model Upload */}
             <div className="glass rounded-2xl p-6 card-hover">
               <div className="flex items-center gap-3 mb-5">
@@ -1001,18 +899,6 @@ const App: React.FC = () => {
                   <>✨ 着画を生成 ({uploadedGarments.length}アイテム)</>
                 )}
               </button>
-              
-              <button
-                onClick={() => setVideoModalOpen(true)}
-                disabled={isGenerating || !humanFile || uploadedGarments.length === 0}
-                className={`w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all duration-300 ${
-                  isGenerating || !humanFile || uploadedGarments.length === 0
-                    ? 'bg-[#F5F5F5] text-[#444] cursor-not-allowed border border-[#E0E0E0]'
-                    : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-[1.02]'
-                }`}
-              >
-                🎬 7カット ショート動画を作る
-              </button>
 
               {/* Error */}
               {error && (
@@ -1194,18 +1080,6 @@ const App: React.FC = () => {
         isGeneratingQuestions={isGeneratingQuestions}
         isGeneratingTryOn={isGenerating}
         initialPrompt={reusedPrompt}
-      />
-
-      {/* Short Video Modal */}
-      <ShortVideoModal
-        isOpen={videoModalOpen}
-        onClose={() => setVideoModalOpen(false)}
-        humanFile={humanFile}
-        primaryGarment={uploadedGarments[0] && uploadedGarments[0].file ? { file: uploadedGarments[0].file as File, id: uploadedGarments[0].id, label: uploadedGarments[0].label } : null}
-        onGenerateSuccess={(newResults) => {
-          setResults(prev => [...newResults, ...prev]);
-        }}
-        companySlug={companySlug}
       />
 
       {/* Pose Analysis Modal */}
