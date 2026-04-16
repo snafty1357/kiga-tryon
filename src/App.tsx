@@ -678,9 +678,8 @@ const App: React.FC = () => {
 
         {/* Main Content Area */}
         <main className="flex-1 max-w-6xl mx-auto px-6 py-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Center Panel: Inputs */}
-            <div className="lg:col-span-5 space-y-6">
+          {/* Top Section: Model + Items side by side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             {/* Model Upload */}
             <div className="glass rounded-2xl p-6 card-hover">
               <div className="flex items-center gap-3 mb-5">
@@ -878,40 +877,39 @@ const App: React.FC = () => {
                 ))}
               </div>
             </div>
-
-            {/* Generate Buttons */}
-            <div className="glass rounded-2xl p-4 space-y-3">
-              <button
-                onClick={handleOpenTryOnModal}
-                disabled={isGenerating || !humanFile || uploadedGarments.length === 0}
-                className={`w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all duration-300 ${
-                  isGenerating || !humanFile || uploadedGarments.length === 0
-                    ? 'bg-[#F5F5F5] text-[#444] cursor-not-allowed border border-[#E0E0E0]'
-                    : 'bg-gradient-to-r from-[#00BFA5] via-[#78909C] to-[#00BFA5] text-[#333333] shadow-xl shadow-teal-500/25 hover:shadow-teal-500/40 hover:scale-[1.02] animate-gradient'
-                }`}
-              >
-                {isGenerating ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    着画を生成中...
-                  </>
-                ) : (
-                  <>✨ 着画を生成 ({uploadedGarments.length}アイテム)</>
-                )}
-              </button>
-
-              {/* Error */}
-              {error && (
-                <div className="mt-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
-                  {error}
-                </div>
-              )}
-            </div>
-
           </div>
 
-          {/* Right Panel: Results */}
-          <div className="lg:col-span-7" data-results>
+          {/* Generate Button - Full Width */}
+          <div className="glass rounded-2xl p-4 mb-8">
+            <button
+              onClick={handleOpenTryOnModal}
+              disabled={isGenerating || !humanFile || uploadedGarments.length === 0}
+              className={`w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all duration-300 ${
+                isGenerating || !humanFile || uploadedGarments.length === 0
+                  ? 'bg-[#F5F5F5] text-[#444] cursor-not-allowed border border-[#E0E0E0]'
+                  : 'bg-gradient-to-r from-[#00BFA5] via-[#78909C] to-[#00BFA5] text-[#333333] shadow-xl shadow-teal-500/25 hover:shadow-teal-500/40 hover:scale-[1.02] animate-gradient'
+              }`}
+            >
+              {isGenerating ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  着画を生成中...
+                </>
+              ) : (
+                <>✨ 着画を生成 ({uploadedGarments.length}アイテム)</>
+              )}
+            </button>
+
+            {/* Error */}
+            {error && (
+              <div className="mt-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+                {error}
+              </div>
+            )}
+          </div>
+
+          {/* Results Section - Full Width */}
+          <div data-results>
             <div className="glass rounded-2xl p-6 min-h-[600px]">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
@@ -934,111 +932,7 @@ const App: React.FC = () => {
               </div>
               <ResultGallery results={results} />
             </div>
-
-            {/* Character Sheet */}
-            {(humanPreview || uploadedGarments.length > 0) && (
-              <div className="glass rounded-2xl p-6 mt-6">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#ff6b35] to-[#fbbf24]"></div>
-                  <h2 className="text-[#333333] font-semibold text-sm">キャラクターシート</h2>
-                </div>
-
-                {/* Model Row */}
-                <div className="mb-5">
-                  <p className="text-[10px] text-[#00d4ff] font-medium uppercase tracking-wider mb-3">Model</p>
-                  <div className="grid grid-cols-4 gap-3">
-                    {/* Model Front */}
-                    <div>
-                      <p className="text-[8px] text-[#00d4ff]/60 mb-1.5 text-center">Front</p>
-                      {humanPreview ? (
-                        <div className="aspect-[3/4] bg-[#FAFAFA] rounded-lg overflow-hidden border-2 border-[#00d4ff]/30">
-                          <img src={humanPreview} alt="Model Front" className="w-full h-full object-cover" />
-                        </div>
-                      ) : (
-                        <div className="aspect-[3/4] bg-[#FAFAFA] rounded-lg border border-dashed border-[#00d4ff]/20 flex items-center justify-center">
-                          <span className="text-lg opacity-20">🧑</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Items Row */}
-                <div>
-                  <p className="text-[10px] text-[#00BFA5] font-medium uppercase tracking-wider mb-3">Items</p>
-                  <div className="grid grid-cols-4 gap-3">
-                    {garments.map(g => (
-                      <div key={g.id} className="space-y-1.5">
-                        <div className="flex justify-center" style={{ color: `${g.accentColor}99` }}>
-                          <span className="scale-[0.5]">{g.icon}</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-1">
-                          {/* Front */}
-                          {g.preview ? (
-                            <div
-                              className="aspect-square bg-[#FAFAFA] rounded overflow-hidden border"
-                              style={{ borderColor: `${g.accentColor}50` }}
-                            >
-                              <img src={g.preview} alt={`${g.label} Front`} className="w-full h-full object-cover" />
-                            </div>
-                          ) : (
-                            <div
-                              className="aspect-square bg-[#FAFAFA] rounded border border-dashed flex items-center justify-center"
-                              style={{ borderColor: `${g.accentColor}20` }}
-                            >
-                              <span className="text-[8px] opacity-20">F</span>
-                            </div>
-                          )}
-                          {/* Back */}
-                          {g.backPreview ? (
-                            <div
-                              className="aspect-square bg-[#FAFAFA] rounded overflow-hidden border"
-                              style={{ borderColor: `${g.accentColor}50` }}
-                            >
-                              <img src={g.backPreview} alt={`${g.label} Back`} className="w-full h-full object-cover" />
-                            </div>
-                          ) : (
-                            <div
-                              className="aspect-square bg-[#FAFAFA] rounded border border-dashed flex items-center justify-center"
-                              style={{ borderColor: `${g.accentColor}20` }}
-                            >
-                              <span className="text-[8px] opacity-20">B</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Summary */}
-                <div className="mt-5 pt-5 border-t border-[#E0E0E0]">
-                  <div className="flex flex-wrap gap-2">
-                    <span className="text-[9px] px-2.5 py-1.5 rounded-lg bg-[#FAFAFA] text-[#78909C] border border-[#E0E0E0]">
-                      解像度: <span className="text-[#333333] font-medium">{resolution}</span>
-                    </span>
-                    <span className="text-[9px] px-2.5 py-1.5 rounded-lg bg-[#FAFAFA] text-[#78909C] border border-[#E0E0E0]">
-                      形式: <span className="text-[#333333] font-medium">{imageFormat.toUpperCase()}</span>
-                    </span>
-                    <span className="text-[9px] px-2.5 py-1.5 rounded-lg bg-[#FAFAFA] text-[#78909C] border border-[#E0E0E0]">
-                      アイテム: <span className="text-[#333333] font-medium">{uploadedGarments.length}</span>
-                    </span>
-                    {uploadedGarments.map(g => (
-                      <span
-                        key={g.id}
-                        className="text-[9px] px-2.5 py-1.5 rounded-lg text-[#333333] font-medium"
-                        style={{ backgroundColor: `${g.accentColor}30`, border: `1px solid ${g.accentColor}40` }}
-                      >
-                        <span className="scale-75 origin-left inline-flex items-center align-text-bottom mr-1">{g.icon}</span>
-                        {g.description ? g.description.substring(0, 15) + (g.description.length > 15 ? '...' : '') : g.label}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
-        </div>
         </main>
       </div>
 
