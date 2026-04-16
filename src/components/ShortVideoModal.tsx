@@ -6,6 +6,21 @@ import { generateProjectId } from './ResultGallery';
 import { getDeviceId } from '../services/historyService';
 import { supabase } from '../services/supabaseClient';
 
+export interface CutItem {
+  id: number;
+  title: string;
+  prompt: string;
+  semanticPrompt?: string;
+  camera?: string;
+  enabled?: boolean;
+  showMain?: boolean;
+  showSub?: boolean;
+  ipPrompt?: string;
+  generatedImageUrl?: string;
+  isGenerating?: boolean;
+  errorMessage?: string;
+}
+
 interface ShortVideoModalProps {
   isOpen: boolean;
   onClose: () => void;

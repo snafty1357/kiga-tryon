@@ -289,6 +289,95 @@ export async function generatePose(request: PoseGenerationRequest): Promise<TryO
   throw new Error('Unexpected response format from API');
 }
 
+// =====================
+// Kling Video Generation
+// =====================
+
+export type KlingModel = 'v1-standard' | 'v1-pro' | 'v2-master' | 'v2.1-pro';
+export type KlingDuration = '5' | '10';
+export type KlingAspectRatio = '16:9' | '9:16' | '1:1';
+
+interface KlingVideoRequest {
+  imageUrl: string;
+  prompt: string;
+  negativePrompt?: string;
+  duration?: KlingDuration;
+  aspectRatio?: KlingAspectRatio;
+  model?: KlingModel;
+}
+
+interface KlingVideoResult {
+  videoUrl: string;
+  thumbnailUrl?: string;
+}
+
+const KLING_MODEL_PATHS: Record<KlingModel, string> = {
+  'v1-standard': 'fal-ai/kling-video/v1/standard/image-to-video',
+  'v1-pro': 'fal-ai/kling-video/v1/pro/image-to-video',
+  'v2-master': 'fal-ai/kling-video/v2/master/image-to-video',
+  'v2.1-pro': 'fal-ai/kling-video/v2.1/pro/image-to-video',
+};
+
+/**
+ * Kling 動画生成 (Image to Video)
+ */
+export async function generateKlingVideo(request: KlingVideoRequest): Promise<KlingVideoResult> {
+  const model = request.model || 'v2-master';
+  const path = KLING_MODEL_PATHS[model];
+
+  console.log(`[Kling] Starting video generation with ${model}...`);
+  console.log('[Kling] Prompt:', request.prompt);
+
+  const submitResult = await falRequest(path, 'POST', {
+    image_url: request.imageUrl,
+    prompt: request.prompt,
+    negative_prompt: request.negativePrompt || '',
+    duration: request.duration || '5',
+    aspect_ratio: request.aspectRatio || '16:9',
+  }, false);
+
+  console.log('[Kling] Submit response:', JSON.stringify(submitResult).substring(0, 300));
+
+  if (submitResult.video?.url) {
+    return {
+      videoUrl: submitResult.video.url,
+      thumbnailUrl: submitResult.thumbnail?.url,
+    };
+  }
+
+  if (submitResult.status_url && submitResult.response_url) {
+    console.log(`[Kling] Queued - polling for result...`);
+    const result = await pollWithUrls(submitResult.status_url, submitResult.response_url);
+
+    const videoUrl = result.video?.url;
+    if (!videoUrl) {
+      console.error('[Kling] No video URL in result:', result);
+      throw new Error('No video URL in response');
+    }
+
+    return {
+      videoUrl,
+      thumbnailUrl: result.thumbnail?.url,
+    };
+  }
+
+  if (submitResult.request_id) {
+    const statusUrl = `https://queue.fal.run/${path}/requests/${submitResult.request_id}/status`;
+    const responseUrl = `https://queue.fal.run/${path}/requests/${submitResult.request_id}`;
+    const result = await pollWithUrls(statusUrl, responseUrl);
+
+    const videoUrl = result.video?.url;
+    if (!videoUrl) throw new Error('No video URL in response');
+
+    return {
+      videoUrl,
+      thumbnailUrl: result.thumbnail?.url,
+    };
+  }
+
+  throw new Error('Unexpected response format from Kling API');
+}
+
 /**
  * ローカルの File を data URL に変換（大きな画像はリサイズ）
  * Vercelのbody制限（4.5MB）を超えないように、画像をリサイズしてからBase64に変換
