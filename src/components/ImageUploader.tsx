@@ -8,11 +8,10 @@ interface ImageUploaderProps {
   onClear: () => void;
   accentColor: string;
   hint?: string;
-  compact?: boolean;
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({
-  label, icon, previewUrl, onFileSelect, onClear, accentColor, hint, compact = false
+  label, icon, previewUrl, onFileSelect, onClear, accentColor, hint
 }) => {
   const [isDragging, setIsDragging] = useState(false);
 
@@ -77,7 +76,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       {previewUrl ? (
         <div className="relative group">
           <div
-            className={`w-full ${compact ? 'aspect-square' : 'aspect-[3/4]'} bg-[#FAFAFA] rounded-xl overflow-hidden transition-all duration-300 group-hover:shadow-xl ${isDragging ? 'ring-2 ring-offset-2' : ''}`}
+            className={`w-full aspect-[3/4] bg-[#FAFAFA] rounded-xl overflow-hidden transition-all duration-300 group-hover:shadow-xl ${isDragging ? 'ring-2 ring-offset-2' : ''}`}
             style={{
               border: isDragging ? `2px solid ${accentColor}` : `2px solid ${accentColor}30`,
               boxShadow: isDragging ? `0 0 20px ${accentColor}30` : `0 0 0 0 ${accentColor}00`,
@@ -125,7 +124,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       ) : (
         <label
           htmlFor={inputId}
-          className={`w-full ${compact ? 'aspect-square' : 'aspect-[3/4]'} rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${
+          className={`w-full aspect-[3/4] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${
             isDragging ? 'scale-[1.02]' : 'hover:scale-[1.01]'
           }`}
           style={{

@@ -260,8 +260,6 @@ export async function generatePromptFromAnswers(
     layeringContext = '\n\nLAYERING RULE: This is a BOTTOM garment (pants/skirt). The person\'s existing upper body clothing MUST be preserved exactly as shown in the model image. Only the lower body garment changes.';
   } else if (garmentCategory === 'shoes') {
     layeringContext = '\n\nLAYERING RULE: These are SHOES. ALL of the person\'s existing clothing MUST be preserved. Only change their footwear.';
-  } else if (garmentCategory === 'accessory') {
-    layeringContext = '\n\nLAYERING RULE: This is an ACCESSORY. ALL of the person\'s existing clothing MUST be preserved. Only add the accessory.';
   } else if (garmentCategory === 'top') {
     layeringContext = '\n\nLAYERING RULE: This is a TOP garment. If the person is wearing an undershirt, camisole, or tank top underneath, PRESERVE that inner layer. Replace only the main top garment with the new item.';
   }
@@ -467,21 +465,6 @@ export async function analyzeGarmentWithChatGPT(garmentImageBase64: string, cate
   "summary": "Concise English summary for image generation prompt (1-2 sentences)"
 }`;
     analyzeText = 'この靴/フットウェアの画像を詳細に分析してください。';
-  } else if (category === 'accessory') {
-    jsonTemplate = `{
-  "type": "アクセサリーの種類（例：時計、バッグ、帽子、マフラー、サングラス、ベルトなど）",
-  "color": "色（例：ゴールド、シルバー、黒、茶色など）",
-  "pattern": "柄やデザイン（例：無地、モノグラム、プリント。無地の場合は '無地'）",
-  "buttons": "留め具（例：クラスプ、バックル、マグネット、ジッパー。ない場合は 'なし'）",
-  "pockets": "コンパートメントやセクション（バッグの場合：ポケットの数など。該当しない場合は 'なし'）",
-  "collar": "シルエット・形状（例：ラウンドフェイスの時計、トートバッグ、バケットハットなど）",
-  "sleeves": "サイズ感（例：スモール、ミディアム、ラージ、オーバーサイズ）",
-  "decorations": "ディテール（例：宝石、刻印、チャーム、金具、ロゴなど。ない場合は 'なし'）",
-  "material": "素材（例：金属、レザー、布地、プラスチック、金メッキなど）",
-  "brand": "見えるブランドロゴやタグ（わからない場合は '不明'）",
-  "summary": "Concise English summary for image generation prompt (1-2 sentences)"
-}`;
-    analyzeText = 'このアクセサリーの画像を詳細に分析してください。';
   } else {
     // デフォルト: 衣服（トップス、ボトムス、アウター、ワンピース等）
     jsonTemplate = `{
