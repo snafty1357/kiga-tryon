@@ -377,17 +377,6 @@ const App: React.FC = () => {
     }
   }, [humanFile, uploadedGarments]);
 
-  // プロンプト最適化
-  const handleOptimizeTryOnPrompt = useCallback(async (prompt: string): Promise<string> => {
-    try {
-      const result = await optimizeTryOnPrompt(prompt);
-      return result;
-    } catch (e: any) {
-      console.error('Prompt optimization error:', e);
-      return prompt;
-    }
-  }, []);
-
   // 着画生成（プロンプト指定）
   const handleGenerateWithPrompt = useCallback(async (fullPrompt: string) => {
     if (!humanFile || uploadedGarments.length === 0) return;
@@ -964,7 +953,6 @@ const App: React.FC = () => {
         onGenerate={handleGenerateWithPrompt}
         onGenerateQuestions={handleGenerateQuestions}
         onGeneratePromptFromAnswers={handleGeneratePromptFromAnswers}
-        onOptimizePrompt={handleOptimizeTryOnPrompt}
         modelPreview={humanPreview}
         garmentPreviews={garments.map(g => ({
           emoji: g.icon,

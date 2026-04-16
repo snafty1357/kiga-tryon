@@ -11,7 +11,6 @@ interface TryOnPromptModalProps {
   onGenerate: (prompt: string) => void;
   onGenerateQuestions: () => Promise<Question[]>;
   onGeneratePromptFromAnswers: (questions: Question[]) => Promise<string>;
-  onOptimizePrompt: (prompt: string) => Promise<string>;
   modelPreview: string | null;
   garmentPreviews: Array<{ emoji: React.ReactNode; preview: string | null; label: string }>;
   isGeneratingQuestions: boolean;
@@ -27,7 +26,6 @@ const TryOnPromptModal: React.FC<TryOnPromptModalProps> = ({
   onGenerate,
   onGenerateQuestions,
   onGeneratePromptFromAnswers,
-  onOptimizePrompt,
   modelPreview,
   garmentPreviews,
   isGeneratingQuestions,
@@ -40,7 +38,6 @@ const TryOnPromptModal: React.FC<TryOnPromptModalProps> = ({
   const [prompt, setPrompt] = useState('');
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
-  const [isOptimizing, setIsOptimizing] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [customAnswer, setCustomAnswer] = useState('');
 
@@ -175,19 +172,6 @@ High quality fashion photography, detailed textures, professional lighting, 8k, 
 
 [Avoid]
 low quality, blurry, distorted, deformed, bad anatomy, wrong proportions, extra limbs, missing limbs, disfigured, ugly, bad hands, missing fingers, extra fingers, watermark, signature, text`;
-  };
-
-  const handleOptimize = async () => {
-    if (!prompt.trim()) return;
-    setIsOptimizing(true);
-    try {
-      const optimized = await onOptimizePrompt(prompt);
-      setPrompt(optimized);
-    } catch (error) {
-      console.error('Failed to optimize prompt:', error);
-    } finally {
-      setIsOptimizing(false);
-    }
   };
 
   const handleGenerate = () => {
@@ -458,34 +442,6 @@ low quality, blurry, distorted, deformed, bad anatomy, wrong proportions, extra 
                     </span>
                   ))}
                 </div>
-              </div>
-
-              {/* Generated Prompt (Hidden from user visually but kept in state) */}
-              <div className="mb-4 bg-[#00BFA5]/10 border border-[#00BFA5]/30 rounded-xl p-4 flex flex-col items-center justify-center text-center">
-                <div className="w-10 h-10 bg-[#00BFA5]/20 rounded-full flex items-center justify-center text-xl mb-2">
-                  🤖
-                </div>
-                <h4 className="text-[#333333] text-sm font-bold mb-1">プロンプト生成完了</h4>
-                <p className="text-[10px] text-[#78909C]">
-                  着画生成のためのAIプロンプトが裏側で自動構築されました。このまま生成へ進むか、さらにプロンプトをAIに最適化させることができます。
-                </p>
-                <button
-                  onClick={handleOptimize}
-                  disabled={isOptimizing || isGeneratingTryOn || !prompt.trim()}
-                  className="mt-3 px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all border border-[#00BFA5]/30 bg-white text-[#00BFA5] hover:bg-[#00BFA5]/10 disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  {isOptimizing ? (
-                    <>
-                      <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      最適化中...
-                    </>
-                  ) : (
-                    <>✨ プロンプトをさらに自動最適化</>
-                  )}
-                </button>
               </div>
 
               {/* Action Buttons */}

@@ -3,7 +3,7 @@
  * 服の詳細分析機能付き（編集可能）
  */
 import React, { useState, useEffect } from 'react';
-import { optimizeTryOnPrompt, type GarmentAnalysis } from '../services/openaiService';
+import { type GarmentAnalysis } from '../services/openaiService';
 
 interface PromptModalProps {
   isOpen: boolean;
@@ -15,7 +15,6 @@ interface PromptModalProps {
   accentColor: string;
   previewUrl: string | null;
   initialDescription?: string;
-  isOptimizing?: boolean;
 }
 
 // 編集可能な分析項目コンポーネント
@@ -100,10 +99,8 @@ const PromptModal: React.FC<PromptModalProps> = ({
   accentColor,
   previewUrl,
   initialDescription = '',
-  isOptimizing = false,
 }) => {
   const [description, setDescription] = useState(initialDescription);
-  const [optimizing, setOptimizing] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<GarmentAnalysis | null>(null);
 
@@ -145,37 +142,6 @@ const PromptModal: React.FC<PromptModalProps> = ({
       ...analysis,
       [key]: value,
     });
-  };
-
-  // 分析結果から詳細な説明文を生成
-  const generateDetailedDescription = async () => {
-    if (!analysis) return;
-
-    setOptimizing(true);
-    try {
-      const parts: string[] = [];
-
-      parts.push(`【種類】 ${analysis.type}`);
-      parts.push(`【色】 ${analysis.color}`);
-      if (analysis.pattern && analysis.pattern !== '無地') parts.push(`【柄】 ${analysis.pattern}`);
-      if (analysis.buttons && analysis.buttons !== 'なし') parts.push(`【ボタン】 ${analysis.buttons}`);
-      if (analysis.pockets && analysis.pockets !== 'なし') parts.push(`【ポケット】 ${analysis.pockets}`);
-      if (analysis.collar && analysis.collar !== 'なし') parts.push(`【襟】 ${analysis.collar}`);
-      if (analysis.sleeves && analysis.sleeves !== 'なし') parts.push(`【袖】 ${analysis.sleeves}`);
-      if (analysis.decorations && analysis.decorations !== '特になし' && analysis.decorations !== 'なし') parts.push(`【装飾】 ${analysis.decorations}`);
-      if (analysis.material && analysis.material !== '不明') parts.push(`【素材】 ${analysis.material}`);
-      if (analysis.extra && analysis.extra.trim()) parts.push(`【追加メモ】 ${analysis.extra.trim()}`);
-
-      const japaneseContext = parts.join('\\n');
-      
-      // 生成された日本語の分析結果を英語に翻訳・最適化する
-      const optimized = await optimizeTryOnPrompt(japaneseContext);
-      setDescription(optimized);
-    } catch (e) {
-      console.error('Failed to generate description from analysis:', e);
-    } finally {
-      setOptimizing(false);
-    }
   };
 
   if (!isOpen) return null;
@@ -306,27 +272,6 @@ const PromptModal: React.FC<PromptModalProps> = ({
               )}
             </div>
           </div>
-
-          {/* Generate Description from Analysis */}
-          {analysis && (
-            <button
-              onClick={generateDetailedDescription}
-              disabled={optimizing || isOptimizing}
-              className="w-full mt-4 px-4 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all duration-300 border border-[#00ff88]/30 bg-[#00ff88]/5 text-[#00ff88] hover:bg-[#00ff88]/10 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              {optimizing || isOptimizing ? (
-                <>
-                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  生成中...
-                </>
-              ) : (
-                <>📝 分析結果から説明文を生成</>
-              )}
-            </button>
-          )}
 
           {/* Description Input */}
           <div className="mt-4">
